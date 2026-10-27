@@ -30,3 +30,7 @@ Start with **Gemini (free tier)** behind an `LLMProvider` interface (`generate(m
 - − Free-tier rate limits constrain concurrency → 1 active run on the demo, per-run budgets, and recorded showcase runs for replay.
 - − Only public/demo code may be sent (free-tier data use); enforced by ADR-0003 restricting sources to public repos.
 - No model name is hardcoded; the model is configuration, validated at startup against the provider's model list.
+
+## Update 2026-10-27 — models selected
+
+Verified against official docs: default `gemini-3.8-flash`, fallback `gemini-3.5-flash-lite`, Groq P1 `openai/gpt-oss-120b`. Details and sources in [TECH_STACK.md](../TECH_STACK.md#llm-models-verified-2026-10-27-against-official-docs).

@@ -1,0 +1,90 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* Design tokens — see docs/DESIGN_SYSTEM.md §2. Accents encode status, never decoration. */
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+
+  --color-bg: #06080f;
+  --color-surface-1: #0b1020;
+  --color-surface-2: #10172a;
+  --color-surface-3: #162038;
+  --color-border: #1c2740;
+  --color-border-strong: #2a3a5c;
+
+  --color-fg: #e7ecf6;
+  --color-fg-2: #a3afc6;
+  --color-fg-3: #6f7c96;
+
+  --color-blue: #4c8dff;
+  --color-violet: #9b87ff;
+  --color-cyan: #2bd4e3;
+  --color-green: #34d399;
+  --color-amber: #f5b544;
+  --color-red: #f2617a;
+  --color-slate: #6f7c96;
+
+  --text-caps: 11px;
+  --text-caps--letter-spacing: 0.08em;
+
+  --radius-control: 6px;
+  --radius-panel: 10px;
+
+  --animate-pulse-ring: pulse-ring 1.8s ease-out infinite;
+
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-blue) 45%, transparent);
+    }
+    70% {
+      box-shadow: 0 0 0 8px transparent;
+    }
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-[13px] text-fg antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-blue) 35%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* React Flow theme overrides */
+.react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke: var(--color-border-strong);
+  --xy-controls-button-background-color: var(--color-surface-2);
+  --xy-controls-button-background-color-hover: var(--color-surface-3);
+  --xy-controls-button-color: var(--color-fg-2);
+  --xy-controls-button-border-color: var(--color-border);
+}

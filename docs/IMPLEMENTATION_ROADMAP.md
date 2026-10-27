@@ -8,7 +8,8 @@ Legend: ✅ done · 🔄 in progress · ⏳ next · ☐ not started
 - ✅ PRODUCT_REQUIREMENTS, USER_JOURNEYS, MVP_SCOPE
 - ✅ ARCHITECTURE, TECH_STACK, DATABASE_DESIGN, API_SPECIFICATION, SECURITY_MODEL
 - ✅ ADR-0001 … ADR-0007
-- ⏳ DESIGN_SYSTEM.md (Phase 3: tokens, components, screen specs)
+- ✅ DESIGN_SYSTEM.md (Phase 3: tokens, components, screen specs)
+- ✅ LLM models verified from official docs (TECH_STACK.md)
 
 ## M1 — Backend foundation ☐
 - `backend/` with uv, ruff, mypy, pytest; `app/config.py`
@@ -19,7 +20,17 @@ Legend: ✅ done · 🔄 in progress · ⏳ next · ☐ not started
 - Event append service (row lock + sequence + NOTIFY) and SSE streamer with catch-up
 - **Accept:** tests prove ordered persistence under concurrent appends, catch-up from `after_seq`, no duplicates after reconnect, NOTIFY only after commit.
 
-## M2 — Frontend shell ☐
+## M2 — Frontend shell 🔄
+
+Done (built ahead of M1, against the API contract; shows honest offline/empty states until the backend exists):
+- ✅ Vite + React 19 + TS strict, Tailwind v4 tokens, React Router, TanStack Query, `vercel.json`, `.env.example`
+- ✅ App shell, Dashboard, Runs list, New Task (authorization summary), Settings (read-only), Run workspace (2D graph via React Flow + ELK, steps, timeline, inspector), replay player
+- ✅ Event reducer shared by live view and replay, with unit tests (dedupe, retries, denied tools, unknown events)
+- ✅ `/dev/preview` with an **ILLUSTRATIVE** fixture, excluded from production builds
+
+Remaining:
+- Wire to the real API once M1 lands; sign-in UI; approval card; results page
+- Move ELK to its web-worker build to shrink the 1.6 MB workspace chunk
 - `frontend/` Vite + React + TS strict; Tailwind tokens; router; `vercel.json` rewrite; `.env.example`
 - App shell (sidebar, top bar), Dashboard and New Task wired to the real API; loading/empty/error states
 - **Accept:** `npm run build` produces static `dist/`; the dashboard shows the empty state with no runs and real values with runs.

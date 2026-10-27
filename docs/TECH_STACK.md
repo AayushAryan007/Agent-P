@@ -20,7 +20,7 @@ Status: Phase 2 baseline. Last updated: 2026-10-27. Versions are pinned in lockf
 | Timeline virtualization | TanStack Virtual | NFR-7: thousands of events |
 | Fonts | Inter (UI), JetBrains Mono (code/ids) | Clean, readable; matches references' style |
 | Tests | Vitest + Testing Library; Playwright (M5) for E2E | Fast unit tests for the reducer and components |
-| Lint/format | ESLint (typescript-eslint) + Prettier | Standard |
+| Lint | oxlint (React + TypeScript plugins) | Ships with the current Vite template; much faster than ESLint and covers the hooks rules we need |
 
 ## Backend
 
@@ -61,8 +61,20 @@ Status: Phase 2 baseline. Last updated: 2026-10-27. Versions are pinned in lockf
 - **LangGraph**: ADR-0001.
 - **WebSockets**: no client→server streaming needed; ADR-0005.
 
+## LLM models (verified 2026-10-27 against official docs)
+
+| Use | Provider / model ID | Free tier | Context (in / out) | Tool calling | Structured output | Notes |
+|---|---|---|---|---|---|---|
+| **Default for all agents** | Gemini `gemini-3.8-flash` (stable) | Yes | 1,048,576 / 65,536 | Yes | Yes | Thinking levels `low`/`medium`/`high`; `minimal` returns an error. Paid: $0.75 / $3.75 per 1M tokens in/out until 2026-12-31, then $1.50 / $7.50 |
+| **Fallback on rate limit** | Gemini `gemini-3.5-flash-lite` (stable) | Yes | 1,048,576 / 65,536 | Yes | Yes | Separate per-model quota; paid $0.30 / $2.50 |
+| **Second provider (P1)** | Groq `openai/gpt-oss-120b` | Yes (Groq free plan) | — | Yes | Strict `json_schema` | Also strict-capable: `openai/gpt-oss-20b`, `qwen/qwen3.8-27b` |
+
+- Free-tier **rate limits are not published in the docs**. They are per project and shown in AI Studio (`aistudio.google.com/rate-limit`) and in the Groq console. They are configured via env (`LLM_RPM`, `LLM_RPD`) and enforced client-side; 429s are handled with backoff plus a `llm.rate_limited` event, then a fallback model.
+- Free-tier content may be used by Google to improve products (paid tier: not used) — consistent with ADR-0002/0003.
+- Not chosen: `gemini-4-argon` and `gemini-3.1-pro-preview` (no free tier); `gemini-2.5-*` (restricted to existing users); `gemini-3-flash-preview` (preview, superseded by 3.8 Flash).
+- Sources: ai.google.dev/gemini-api/docs/models, /pricing, /rate-limits; console.groq.com/docs/tool-use, /structured-outputs.
+
 ## To verify at integration time
 
-- Current Gemini free-tier model IDs, rate limits, function-calling + JSON-schema support → recorded here in Phase 5.
-- Groq models with reliable tool calling (P1).
+- Actual per-project RPM/RPD shown in AI Studio once the API key exists.
 - gVisor availability on the provisioned OCI image.

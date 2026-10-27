@@ -91,17 +91,21 @@ Mutating requests also require an allowed `Origin` and an `X-CSRF-Token` header 
 
 ```
 id: 42
-event: tool.completed
-data: {"event_id":"…","run_id":"…","sequence_number":42,…}
+data: {"event_id":"…","run_id":"…","sequence_number":42,"event_type":"tool.completed",…}
 
 : keepalive          (comment line every 15 s)
+
+event: end
+data: {}
 ```
+
+Execution events are sent **without** an SSE `event:` field (so the browser's `onmessage` receives all of them; the type is in `event_type`). Only the stream-control event `end` is named.
 
 Server algorithm:
 1. Subscribe to `LISTEN run_events` (one shared listener per API process, fanned out in-process).
 2. Query and send all events with `seq > cursor` from the DB, advancing the cursor.
 3. On each notification for this run, query `seq > cursor` again and send.
-4. After a terminal workflow event is sent and no more rows exist, send `event: end` and close.
+4. After a terminal workflow event is sent and no more rows exist, send the `end` event and close. The client closes its `EventSource` on `end` so the browser does not auto-reconnect.
 
 Guarantees: every event is persisted before it is sent; ordered by `sequence_number`; **at-least-once** delivery. Clients dedupe by `sequence_number` (ignore `seq ≤ last applied`) and, on a gap, refetch via `GET /events?after_seq=`.
 
@@ -124,7 +128,7 @@ Guarantees: every event is persisted before it is sent; ordered by `sequence_num
 
 | event_type | payload (key fields) |
 |---|---|
-| `workflow.created` | `task_id`, `template_key`, `steps[]` (key, kind, role, title, depends_on), `limits`, `model` |
+| `workflow.created` | `task_id`, `template_key`, `steps[]` (id, key, kind, role, title, depends_on — keys of upstream steps), `limits`, `model` |
 | `workflow.started` | `worker_id` |
 | `workflow.waiting_approval` | `approval_id` |
 | `workflow.completed` | `verification_label`, `report_artifact_id`, `totals` |
