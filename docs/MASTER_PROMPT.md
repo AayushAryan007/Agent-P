@@ -142,7 +142,7 @@ Organize features into three levels.
 - Tool-call and execution logs.
 - Persistent task history.
 - Final report containing evidence and verification status.
-- Docker-based local development.
+
 - Basic automated tests.
 - A deployable demonstration environment.
 
@@ -323,6 +323,20 @@ Before implementing the complete frontend:
 
 Prefer a cohesive, functioning application over a collection of disconnected mockups.
 
+## Frontend technology and hosting (fixed decision)
+
+This is a decided constraint, not an open question. Treat it as an input to the architecture rather than something to re-evaluate.
+
+- Build the frontend as a **React + TypeScript single-page application using Vite**.
+- Place it in its own top-level directory, **`frontend/`**, with its own `package.json`, separate from the Python backend.
+- The frontend will be **hosted on Vercel**, deployed automatically from the `main` branch with Vercel's Root Directory set to `frontend/` and the Vite preset. Every push to `main` deploys production; pull requests get preview deployments.
+- The production build must be a **static build** (`npm run build` → `frontend/dist/`). Do not depend on server-side rendering, Next.js, or Vercel serverless functions for core functionality.
+- Configure client-side routing for static hosting (a `vercel.json` rewrite that serves `index.html` for all application routes).
+- The frontend talks to the backend only through its public API and event stream. The backend URL is injected at build time through environment variables such as `VITE_API_URL` and `VITE_WS_URL`. Provide a `frontend/.env.example`.
+- **Never place LLM API keys, database credentials, or any other secret in the frontend or in Vercel frontend environment variables.** Anything prefixed `VITE_` is shipped to the browser and must be treated as public.
+- The backend must allow the Vercel production domain and preview domains through an explicit CORS and WebSocket origin allowlist, not a wildcard.
+- Choose supporting libraries (styling, 2D graph, state management, data fetching) during Phase 2, explaining the trade-offs, but they must work inside a Vite + React + TypeScript build. React Three Fiber and Three.js remain the choice for the 3D view.
+
 ---
 
 # 6. Backend Architecture
@@ -332,6 +346,8 @@ Act as a senior Python backend architect.
 Design a maintainable backend with clear boundaries between API handling, orchestration, model integration, tools, execution, persistence, and event delivery.
 
 Start with a modular monolith. Do not introduce microservices unless a demonstrated requirement justifies them.
+
+The backend is **not** hosted on Vercel. It requires long-running workflows, persistent WebSocket or SSE connections, PostgreSQL, and Docker-based sandboxes, none of which fit Vercel's serverless model. Recommend a suitable container host for it (for example Render, Railway, Fly.io, or a VPS on AWS or OCI) during Phase 2, with trade-offs.
 
 ## Preferred backend stack
 
@@ -602,7 +618,7 @@ Produce Mermaid diagrams for:
 - Database relationships.
 - Execution event lifecycle.
 - Code execution and approval flow.
-- Deployment topology.
+- Deployment topology, showing the Vite frontend on Vercel and the backend, database, and sandbox on their separate host.
 
 Discuss:
 
@@ -669,7 +685,7 @@ Add unit tests, integration tests, API tests, frontend tests, security checks, a
 
 ## Phase 9 — Deployment
 
-Create Docker Compose for local development, CI checks, environment configuration, production deployment instructions, and monitoring.
+Create Docker Compose for local development, CI checks, environment configuration, production deployment instructions, and monitoring. Use GitHub Actions for CI (backend tests, linting, type checks, and frontend build and tests on every push and pull request). Use Vercel for continuous deployment of the `frontend/` Vite app, and document the separate deployment pipeline for the backend.
 
 ## Phase 10 — Portfolio and open source
 
@@ -747,6 +763,7 @@ Plan for:
 - Database migrations.
 - Health and readiness checks.
 - CI/CD.
+- The Vite frontend deployed on Vercel from `frontend/`, with the backend, database, and sandbox on a separate container host.
 - Structured logs and error reporting.
 - Usage quotas and execution timeouts.
 - API provider limits.
@@ -816,7 +833,7 @@ In your first response, provide:
 2. The primary user persona and the problem being solved.
 3. Your recommended MVP scope and what should be deferred.
 4. The three most important architectural decisions we must make.
-5. A proposed technology stack with a brief justification for each choice.
+5. A proposed technology stack with a brief justification for each choice, treating the Vite + React + TypeScript frontend on Vercel (Section 5) as already decided.
 6. The biggest technical risks and how we should address them.
 7. A short set of high-value questions that require my input.
 8. A proposed development roadmap with milestones and acceptance criteria.
@@ -828,3 +845,92 @@ Recommend sensible defaults where possible.
 After I respond, refine the requirements and proceed step by step.
 
 **Your ultimate goal is to help me build a real, polished, technically credible AGENT-P—not merely generate a large amount of code.**
+
+
+
+
+
+
+# Local Container Runtime: Colima (not Docker Desktop)
+
+This is a fixed project decision. It applies to local development on macOS.
+
+**AGENT-P does not use Docker Desktop.** Containers run on **Colima**, a lightweight Linux VM for macOS that provides a Docker-compatible engine. The standard `docker` CLI and the `docker compose` plugin are installed separately through Homebrew and talk to Colima.
+
+Everything in `docs/MASTER_PROMPT.md` that refers to "Docker", "Docker Compose", or "containers" still applies. It means "Docker-compatible containers running on Colima", not Docker Desktop.
+
+---
+
+## 1. One-time setup
+
+```bash
+# Runtime + CLI tools (no Docker Desktop)
+brew install colima docker docker-compose docker-buildx
+
+# Register compose and buildx as docker CLI plugins so `docker compose` / `docker buildx` work
+mkdir -p ~/.docker/cli-plugins
+ln -sfn "$(brew --prefix)/opt/docker-compose/bin/docker-compose" ~/.docker/cli-plugins/docker-compose
+ln -sfn "$(brew --prefix)/opt/docker-buildx/bin/docker-buildx" ~/.docker/cli-plugins/docker-buildx
+
+# Start the VM (Apple Silicon: vz is faster; adjust resources to your Mac)
+colima start --cpu 4 --memory 8 --disk 60 --vm-type vz
+
+# Verify
+docker context ls          # "colima" should be the active context (marked *)
+docker run --rm hello-world
+docker compose version
+```
+
+If `docker context ls` does not show `colima` as active:
+
+```bash
+docker context use colima
+```
+
+## 2. Daily use
+
+```bash
+colima start      # start the VM (settings from the first start are remembered)
+colima status     # check it is running
+colima stop       # stop it to free CPU/RAM when not developing
+```
+
+Containers only run while Colima is running. If a `docker` command fails with "Cannot connect to the Docker daemon", run `colima start` first.
+
+## 3. Rules for Claude Code and any tooling
+
+1. **Never assume Docker Desktop.** Do not tell the user to install it, open it, or change its settings. Do not rely on Docker Desktop-only features (the Desktop GUI, Docker Desktop extensions, its built-in Kubernetes, or its settings panel).
+2. **Use standard CLI commands only:** `docker`, `docker compose` (v2 plugin syntax, with a space), and `docker buildx`. Not the legacy `docker-compose` binary syntax in documentation or scripts.
+3. **Programmatic Docker access must use the active Docker context or `DOCKER_HOST`.** Colima's socket is not at Docker Desktop's default location. Any code that talks to the engine directly (for example the `sandbox` module using the Docker SDK for Python, or Testcontainers in tests) must not hardcode `/var/run/docker.sock` on the host. Read `DOCKER_HOST` from the environment, and document it in `.env.example`:
+
+   ```bash
+   # macOS + Colima
+   DOCKER_HOST=unix://${HOME}/.colima/default/docker.sock
+   ```
+
+   Find the exact path on any machine with:
+
+   ```bash
+   docker context inspect colima --format '{{.Endpoints.docker.Host}}'
+   ```
+
+4. **Keep the project under the home directory** (it lives at `~/Desktop/agent-p`). Colima shares the home directory into the VM, so bind mounts from inside it work. Before relying on bind mounts in the sandbox design, verify read and write behaviour with a quick test container, and report the result rather than assuming.
+5. **Do not hardcode host networking assumptions.** If a container needs to reach a service on the Mac host, verify that `host.docker.internal` resolves under Colima before depending on it; otherwise, run the dependency (PostgreSQL, Redis) as a Compose service and use the Compose service name.
+6. **Respect the VM's resource ceiling.** Sandbox CPU and memory limits must fit inside the Colima VM's allocation (default above: 4 CPUs, 8 GB). If a design needs more, say so and tell the user the exact `colima start` flags to change.
+7. **Architecture:** on Apple Silicon the VM is `arm64`. Prefer multi-arch base images (official `python`, `postgres`, `redis` images are). If an image is amd64-only, flag it instead of silently using emulation.
+
+## 4. Security notes (relevant to the sandbox design)
+
+- Colima runs containers inside a Linux VM, which adds a layer between sandboxed code and macOS. That is useful defence in depth, but it is **not** a substitute for the sandbox controls in Section 8 of the master prompt: non-root users, dropped capabilities, no network by default, CPU/memory/time limits, read-only mounts where possible.
+- **Never mount the Colima Docker socket into any agent sandbox container**, exactly as with Docker Desktop. Access to the socket is equivalent to control of the engine.
+- The production backend host will not use Colima; it will run a normal Linux Docker engine. Keep the sandbox code runtime-agnostic (driven by `DOCKER_HOST` / the active context) so the same code works locally and in production.
+
+## 5. Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `Cannot connect to the Docker daemon` | `colima start`, then `docker context use colima` |
+| `docker: 'compose' is not a docker command` | Re-run the `ln -sfn ... docker-compose` line in Section 1 |
+| Python Docker SDK or Testcontainers cannot find the engine | Set `DOCKER_HOST` as shown in Section 3 |
+| Containers are slow or killed for memory | `colima stop`, then `colima start --cpu 6 --memory 12` (adjust to your Mac) |
+| Something is badly broken | `colima delete` and start again (this deletes all local images and volumes) |
