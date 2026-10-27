@@ -10,8 +10,15 @@ from app.orchestrator.context import RunContext, StepInfo
 from app.persistence.models import LLMCall
 
 MAX_RATE_LIMIT_WAITS = 3
-MAX_TRANSIENT_RETRIES = 2
+MAX_TRANSIENT_RETRIES = 3
 MAX_BACKOFF_S = 30.0
+
+
+def _stick_to_fallback(ctx: RunContext, model: str) -> None:
+    """After falling back, use the fallback model for the rest of the run instead of probing the
+    overloaded model again on every turn (each probe can cost a 60-90 s gateway timeout)."""
+    ctx.model = model
+    ctx.fallback_model = None
 
 
 async def llm_turn(
@@ -35,6 +42,7 @@ async def llm_turn(
             await _record_failure(ctx, step, call_id, model, attempt, "rate_limited", str(exc), started.id)
             if model_idx + 1 < len(models):
                 model_idx += 1
+                _stick_to_fallback(ctx, models[model_idx])
                 await ctx.emit(
                     "retry.scheduled",
                     {
@@ -65,17 +73,20 @@ async def llm_turn(
         except TransientLLMError as exc:
             await _record_failure(ctx, step, call_id, model, attempt, "error", str(exc), started.id)
             transient += 1
-            if transient > MAX_TRANSIENT_RETRIES:
+            # An overloaded model (503/504) often stays overloaded for minutes: retry once on the same
+            # model, then move to the fallback model, which has separate capacity and quota.
+            switch = transient >= 2 and model_idx + 1 < len(models)
+            if switch:
+                model_idx += 1
+                transient = 0
+                _stick_to_fallback(ctx, models[model_idx])
+            elif transient > MAX_TRANSIENT_RETRIES:
                 raise
-            delay = 2.0 * transient
+            delay = 0.0 if switch else min(2.0 * 2 ** (transient - 1), MAX_BACKOFF_S)
+            reason = f"{str(exc)[:150]}; fallback to {models[model_idx]}" if switch else str(exc)[:200]
             await ctx.emit(
                 "retry.scheduled",
-                {
-                    "target": "llm_call",
-                    "attempt": attempt,
-                    "delay_ms": int(delay * 1000),
-                    "reason": str(exc)[:200],
-                },
+                {"target": "llm_call", "attempt": attempt, "delay_ms": int(delay * 1000), "reason": reason},
                 step_id=step.id,
             )
             await asyncio.sleep(delay)

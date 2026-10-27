@@ -142,3 +142,15 @@ def test_budget_limits_and_pause() -> None:
     assert b._paused_at is not None
     b.resume()
     assert b._paused_at is None
+
+
+def test_patch_tolerates_wrong_indentation_but_not_ambiguity(tmp_path: Path) -> None:
+    src = "class A:\n    def f(self):\n        x = 1\n        return x\n"
+    (tmp_path / "m.py").write_text(src)
+    files = apply_edits(tmp_path, [Edit(path="m.py", search="  x = 1\n  return x", replace="  return 1")])
+    assert files["m.py"][1] == "class A:\n    def f(self):\n        return 1\n"
+    (tmp_path / "d.py").write_text("a = 1\nif x:\n    a = 1\n")
+    with pytest.raises(ToolError, match="found 2 times"):
+        apply_edits(tmp_path, [Edit(path="d.py", search="a = 1", replace="a = 2")])
+    with pytest.raises(ToolError, match="line-number prefixes"):
+        apply_edits(tmp_path, [Edit(path="m.py", search="    3          x = 2", replace="")])

@@ -223,3 +223,18 @@ async def test_full_run_in_real_sandbox(
     assert (
         events.count("sandbox.started") == events.count("sandbox.finished") == 4
     )  # baseline + patched, tests + bench
+
+
+async def test_overloaded_model_falls_back(settings: Settings, db: Database, tmp_path: Path) -> None:
+    from app.llm.base import TransientLLMError
+
+    turns = scripts(invalid_first=False)
+    overload = TransientLLMError("Gemini 503: high demand")
+    turns["[role:planner]"] = [overload, overload, *turns["[role:planner]"]]
+    provider = ScriptedProvider(turns)
+    worker = worker_for(settings, db, provider, FakeSandbox(), tmp_path)
+    run_id, task = await start(db, worker)
+    await wait_for_approval(db, run_id, task)
+    task.cancel()
+    planner_models = [c["model"] for c in provider.calls if c["role"] == "[role:planner]"]
+    assert planner_models == [settings.gemini_model, settings.gemini_model, settings.gemini_fallback_model]

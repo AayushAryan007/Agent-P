@@ -70,6 +70,8 @@ Status: Phase 2 baseline. Last updated: 2026-10-27. Versions are pinned in lockf
 | **Second provider (P1)** | Groq `openai/gpt-oss-120b` | Yes (Groq free plan) | — | Yes | Strict `json_schema` | Also strict-capable: `openai/gpt-oss-20b`, `qwen/qwen3.8-27b` |
 
 - Free-tier **rate limits are not published in the docs**. They are per project and shown in AI Studio (`aistudio.google.com/rate-limit`) and in the Groq console. They are configured via env (`LLM_RPM`, `LLM_RPD`) and enforced client-side; 429s are handled with backoff plus a `llm.rate_limited` event, then a fallback model.
+- Observed 2026-10-28: `gemini-3.8-flash` intermittently returned 503 "high demand" and 504 deadline errors on the free tier. The orchestrator retries once, then switches the run to `gemini-3.5-flash-lite` (sticky for the rest of the run), recording each attempt as an event.
+- AI Studio now issues keys in the `AQ.…` format (in addition to legacy `AIza…`); both are covered by log/event redaction.
 - Free-tier content may be used by Google to improve products (paid tier: not used) — consistent with ADR-0002/0003.
 - Not chosen: `gemini-4-argon` and `gemini-3.1-pro-preview` (no free tier); `gemini-2.5-*` (restricted to existing users); `gemini-3-flash-preview` (preview, superseded by 3.8 Flash).
 - Sources: ai.google.dev/gemini-api/docs/models, /pricing, /rate-limits; console.groq.com/docs/tool-use, /structured-outputs.

@@ -12,6 +12,7 @@ _SENSITIVE_KEY = re.compile(
 
 _SECRET_PATTERNS = [
     re.compile(r"AIza[0-9A-Za-z_\-]{35}"),  # Google API key
+    re.compile(r"\bAQ\.[0-9A-Za-z_\-]{30,}"),  # Google AI Studio auth key
     re.compile(r"gsk_[0-9A-Za-z]{20,}"),  # Groq key
     re.compile(r"sk-[0-9A-Za-z_\-]{20,}"),  # OpenAI-style keys
     re.compile(r"gh[pousr]_[0-9A-Za-z]{30,}"),  # GitHub tokens

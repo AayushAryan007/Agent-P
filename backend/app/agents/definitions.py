@@ -115,12 +115,13 @@ DEBUGGER = AgentSpec(
 You are the Debugging agent. Confirm the root cause using the analysis provided, then propose the smallest
 correct fix with propose_patch (exact search/replace edits; each search must match exactly once). Preserve the
 endpoint's observable behaviour: same results, same ordering, same edge cases. Do not modify tests or benchmark
-files. If propose_patch reports an error, fix the edits and call it again. After a successful propose_patch,
-call submit_result.
+files. read_file output starts each line with a line number and two spaces: never copy those prefixes into
+search text. Keep each search block short (a few distinctive lines). If propose_patch reports an error, read the
+file again and fix the edits. After a successful propose_patch, call submit_result.
 """,
     tools=(READ_FILE, SEARCH_CODE, PROPOSE_PATCH),
     output_model=DebugResult,
-    max_turns=12,
+    max_turns=16,
 )
 
 REVIEWER = AgentSpec(

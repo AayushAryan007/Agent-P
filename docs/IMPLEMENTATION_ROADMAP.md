@@ -39,14 +39,15 @@ Remaining (lands with M3/M4 features):
 
 **Accept:** `npm run build` produces static `dist/` ✅; the dashboard shows the empty state with no runs ✅ and real values with runs (verified once M3 produces runs).
 
-## M3 — Real agents ✅ (pending one live Gemini run)
+## M3 — Real agents ✅
 - ✅ `LLMProvider` protocol, Gemini adapter (`generate_content`, forced function calling, thought signatures preserved), scripted provider for tests
 - ✅ Tool gate (allowlist → schema → budget → timeout → redaction → record) with `list_tree`, `read_file`, `search_code`, `propose_patch`; path policy blocks traversal, absolute paths, `.git`, escaping symlinks
 - ✅ Transition tables, DAG scheduler (baseline runs in parallel with planning/analysis), worker with SKIP LOCKED claim, DB-clock leases, cancellation, stale-run recovery, budgets
 - ✅ Coordinator (plan + report), Repository Analysis, Debugging, Review agents; outputs via validated `submit_result`; invalid output → `agent.output_invalid` + retry
 - ✅ `demo-repos/demo-slow-api`: N+1 in `list_orders()`; reference fix measured 273 ms → 8.5 ms p50 on the host
 - ✅ Live workspace wired to SSE; approval card; cancel; report link
-- ⏳ **Accept:** run once with a real `GEMINI_API_KEY` and record the outcome here (automated tests use the scripted provider).
+- ✅ **Accepted (2026-10-28, live Gemini):** run `01a17ec1…` on `demo-slow-api` — analysis located the N+1 at `app/repository.py:14`, the debugging agent proposed a batch query, operator approved, sandbox verification: 5/5 tests, p50 395.3 → 9.8 ms → **verified**. 17 LLM calls, ~59k tokens.
+- Lessons from live runs (fixed): `gemini-3.8-flash` returned 503/504 under load → transient errors now fall back to `gemini-3.5-flash-lite` and stay there for the run; models mis-copied indentation into `propose_patch` → unique indentation-tolerant matching, clearer errors, and prompt guidance.
 
 ## M4 — Safe verification ✅
 - ✅ Sandbox image `agentp-sandbox-python:0.1` (non-root, git, pytest/fastapi/httpx preinstalled) and runner (cap-drop ALL, no-new-privileges, read-only rootfs, tmpfs, pids/mem/cpu limits, timeout kill, labels + orphan cleanup)

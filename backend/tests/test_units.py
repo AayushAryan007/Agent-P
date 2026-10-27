@@ -47,3 +47,7 @@ def test_blank_secrets_mean_not_configured() -> None:
 
     s = Settings(_env_file=None, gemini_api_key="", groq_api_key="  ", admin_token_hash="")  # type: ignore[call-arg, arg-type]
     assert s.gemini_api_key is None and s.groq_api_key is None and s.admin_token_hash is None
+
+
+def test_redacts_ai_studio_auth_keys() -> None:
+    assert redact("using AQ.FakeKeyForTests_0000000000000000000000 now") == f"using {REDACTED} now"
