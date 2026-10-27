@@ -98,6 +98,7 @@ export interface Meta {
 
 export interface Me {
   role: 'operator' | 'anonymous'
+  csrf_token: string | null
 }
 
 export interface CreateTaskRequest {

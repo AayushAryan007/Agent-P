@@ -59,7 +59,7 @@ GitHub HTTPS URLs only (strict regex, no credentials, no other hosts). Shallow c
 
 ### 4.5 API and auth (ADR-0004)
 - Admin token compared via argon2 hash verification; 5 attempts per minute per IP; failures audited.
-- Session cookie: signed, `HttpOnly`, `Secure`, `SameSite=None`, 12 h lifetime. CSRF double-submit token plus `Origin` allowlist on mutations.
+- Session cookie: signed, `HttpOnly`, `Secure`, `SameSite=None`, 12 h lifetime. CSRF synchronizer token (bound to the signed session, delivered in `/auth` response bodies, sent back as `X-CSRF-Token`) plus `Origin` allowlist on mutations.
 - CORS: explicit origins, no wildcard; the same allowlist is used for SSE.
 - Request size limit of 64 KB; Pydantic limits on all strings and lists.
 - Security headers via Caddy (HSTS, `nosniff`, `frame-ancestors 'none'`).

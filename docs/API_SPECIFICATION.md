@@ -23,16 +23,16 @@ Status: Phase 2 baseline. Last updated: 2026-10-27. The FastAPI-generated OpenAP
 | anonymous | no cookie | `GET` on public tasks/runs/events/artifacts, `GET /meta` |
 | operator | session cookie from `POST /auth/session` | everything |
 
-Mutating requests also require an allowed `Origin` and an `X-CSRF-Token` header that matches the `agentp_csrf` cookie (double submit). CORS: explicit allowlist (`https://agent-p.vercel.app`, preview pattern `https://agent-p-*-<team>.vercel.app`, `http://localhost:5173`), `allow_credentials=true`.
+Mutating requests also require an allowed `Origin` and an `X-CSRF-Token` header equal to the `csrf_token` returned by `POST /auth/session` or `GET /auth/me` (synchronizer token bound to the signed session cookie). CORS: explicit allowlist (`https://agent-p.vercel.app`, preview pattern `https://agent-p-*-<team>.vercel.app`, `http://localhost:5173`), `allow_credentials=true`.
 
 ## 3. Endpoints
 
 ### Auth and meta
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| POST | `/auth/session` | – | Body `{"token":"…"}` → sets session + CSRF cookies; 401 on mismatch (constant-time), rate-limited 5/min/IP |
+| POST | `/auth/session` | – | Body `{"token":"…"}` → sets the httpOnly session cookie, returns `{"role":"operator","csrf_token":"…"}`; 401 on mismatch (argon2 verify), rate-limited 5/min/IP |
 | DELETE | `/auth/session` | op | Logout |
-| GET | `/auth/me` | – | `{"role":"operator"|"anonymous"}` |
+| GET | `/auth/me` | – | `{"role":"operator"|"anonymous","csrf_token":"…"|null}` |
 | GET | `/meta` | – | Templates, bundled repos, configured providers + models (no secrets), server limit maximums |
 | GET | `/healthz` (root, not versioned) | – | Liveness |
 | GET | `/readyz` | – | DB reachable, migrations at head, (worker heartbeat fresh) |

@@ -210,6 +210,12 @@ function Form({ meta, isOperator }: { meta: Meta; isOperator: boolean }) {
             </div>
           </div>
 
+          {configuredModels.length === 0 && (
+            <div role="status" className="rounded-control border border-amber/30 bg-amber/10 p-3 text-amber">
+              No model provider is configured on the backend. Set <code className="font-mono">GEMINI_API_KEY</code> in{' '}
+              <code className="font-mono">backend/.env</code> and restart the API.
+            </div>
+          )}
           {create.isError && (
             <div role="alert" className="rounded-control border border-red/30 bg-red/10 p-3 text-red">
               {create.error instanceof ApiError ? create.error.message : 'Could not start the run.'}

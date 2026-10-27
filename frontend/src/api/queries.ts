@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from './client'
+import { api, setCsrfToken } from './client'
 import type { CreateTaskRequest, Me, Meta, MetricsSummary, Page, RunDetail, RunListItem, Task } from './types'
 
 export const queryKeys = {
@@ -10,7 +10,37 @@ export const queryKeys = {
   run: (id: string) => ['run', id] as const,
 }
 
-export const useMe = () => useQuery({ queryKey: queryKeys.me, queryFn: ({ signal }) => api<Me>('/auth/me', { signal }) })
+async function fetchMe(signal?: AbortSignal): Promise<Me> {
+  const me = await api<Me>('/auth/me', { signal })
+  setCsrfToken(me.csrf_token)
+  return me
+}
+
+export const useMe = () => useQuery({ queryKey: queryKeys.me, queryFn: ({ signal }) => fetchMe(signal) })
+
+export function useSignIn() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (token: string) => api<Me>('/auth/session', { method: 'POST', body: { token } }),
+    onSuccess: (me) => {
+      setCsrfToken(me.csrf_token)
+      qc.setQueryData(queryKeys.me, me)
+      void qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'me' })
+    },
+  })
+}
+
+export function useSignOut() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<void>('/auth/session', { method: 'DELETE' }),
+    onSuccess: () => {
+      setCsrfToken(null)
+      qc.setQueryData(queryKeys.me, { role: 'anonymous', csrf_token: null } satisfies Me)
+      void qc.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'me' })
+    },
+  })
+}
 
 export const useMeta = () =>
   useQuery({ queryKey: queryKeys.meta, queryFn: ({ signal }) => api<Meta>('/meta', { signal }), staleTime: 5 * 60_000 })

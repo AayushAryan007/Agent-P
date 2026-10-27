@@ -31,9 +31,13 @@ export class ApiError extends Error {
   }
 }
 
-function readCookie(name: string): string | null {
-  const match = document.cookie.split('; ').find((c) => c.startsWith(`${name}=`))
-  return match ? decodeURIComponent(match.slice(name.length + 1)) : null
+/**
+ * CSRF synchronizer token from /auth/session or /auth/me. Held in memory only: the API sets its
+ * session cookie on its own domain, which this SPA (on another domain) cannot read anyway.
+ */
+let csrfToken: string | null = null
+export function setCsrfToken(token: string | null): void {
+  csrfToken = token
 }
 
 export interface RequestOptions {
@@ -47,10 +51,7 @@ export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T
   const method = opts.method ?? 'GET'
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (opts.body !== undefined) headers['Content-Type'] = 'application/json'
-  if (method !== 'GET') {
-    const csrf = readCookie('agentp_csrf')
-    if (csrf) headers['X-CSRF-Token'] = csrf
-  }
+  if (method !== 'GET' && csrfToken) headers['X-CSRF-Token'] = csrfToken
   if (opts.idempotencyKey) headers['Idempotency-Key'] = opts.idempotencyKey
 
   let res: Response

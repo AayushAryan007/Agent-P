@@ -1,32 +1,12 @@
-# React + TypeScript + Vite
+# AGENT-P frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Vite + React + TypeScript single-page app. Static build, deployed on Vercel with Root Directory `frontend/`.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+cp .env.example .env.local   # VITE_API_URL — public, never put secrets here
+npm install
+npm run dev                  # http://localhost:5173  (design preview: /dev/preview)
+npm run lint && npm run typecheck && npm test && npm run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Structure: `src/api` (REST client, queries, types) · `src/domain` (event schema and the run-state reducer shared by live view and replay) · `src/features/*` (screens) · `src/components` (shell and UI primitives). Design tokens live in `src/index.css`; see `docs/DESIGN_SYSTEM.md`.

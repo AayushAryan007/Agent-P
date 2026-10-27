@@ -86,7 +86,8 @@ Indexes: `(status, queued_at)` partial `WHERE status='queued'`; `(task_id, queue
 | title | text | |
 | depends_on | text[] | Keys of upstream steps |
 | status | text | `pending`, `running`, `waiting_approval`, `completed`, `failed`, `cancelled`, `skipped` |
-| attempt | int | Starts at 1 |
+| position | smallint | Order within the template (display and topological order) |
+| attempt | int | 0 until first started |
 | input, output, error | jsonb | Bounded size (enforced in app) |
 | started_at, finished_at | timestamptz | |
 
@@ -121,7 +122,7 @@ Excerpts are redacted and bounded; full prompts are reconstructable from the age
 Partial unique index `(step_id) WHERE status='pending'`. Decisions use `UPDATE … WHERE id=$1 AND status='pending'` → 0 rows ⇒ 409.
 
 ### artifacts
-`id, run_id, step_id, kind (patch|test_report|benchmark|review|report|log), name, content_type, size_bytes, sha256, inline_content jsonb/text null, storage_path text null, created_at, expires_at null`.
+`id, run_id, step_id, kind (patch|test_report|benchmark|review|report|log), name, content_type, size_bytes, sha256, inline_text text null, inline_json jsonb null, storage_path text null, created_at, expires_at null`.
 Small artifacts (≤ 256 KB) are stored inline; larger ones on disk under `ARTIFACT_ROOT` (object storage later).
 
 ### audit_log
@@ -144,7 +145,7 @@ Transition tables live in `orchestrator/transitions.py` and are unit tested exha
 
 ## 5. Derived data (not stored)
 
-Dashboard: success rate = completed ÷ terminal runs in the window; average duration = avg(finished_at − started_at); tokens = sum over `llm_calls`; recent failures = runs with status `failed`, ordered by `finished_at`. All computed by SQL views/queries.
+Dashboard: success rate = completed ÷ terminal runs in the window; average duration = avg(finished_at − started_at); tokens = sum of `workflow_runs.totals` (input + output, kept in step with `llm_calls` by the orchestrator); recent failures = runs with status `failed`, ordered by `finished_at`. All computed by SQL views/queries.
 
 ## 6. Retention
 

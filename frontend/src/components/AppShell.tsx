@@ -4,6 +4,7 @@ import { LayoutDashboard, ListTree, Plus, Settings, type LucideIcon } from 'luci
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { API_URL } from '@/api/client'
 import { useMe } from '@/api/queries'
+import { AuthControl } from './AuthControl'
 import { Button } from './ui'
 
 const NAV: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
@@ -36,11 +37,7 @@ function ConnectionChip() {
         <span className={clsx('size-2 rounded-full', tone)} aria-hidden />
         {label}
       </span>
-      {me.data && (
-        <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-fg-2">
-          {me.data.role === 'operator' ? 'Operator' : 'Viewer'}
-        </span>
-      )}
+      <AuthControl />
     </div>
   )
 }

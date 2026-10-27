@@ -11,14 +11,17 @@ Legend: ✅ done · 🔄 in progress · ⏳ next · ☐ not started
 - ✅ DESIGN_SYSTEM.md (Phase 3: tokens, components, screen specs)
 - ✅ LLM models verified from official docs (TECH_STACK.md)
 
-## M1 — Backend foundation ☐
-- `backend/` with uv, ruff, mypy, pytest; `app/config.py`
-- `compose.yaml`: postgres, api, worker (Colima); `.env.example` including `DOCKER_HOST`
-- Verify Colima bind-mount read/write and `host.docker.internal` (record the results)
-- Alembic migrations for all MVP tables; append-only grants on `execution_events`
-- `/healthz`, `/readyz`, request ID middleware, structlog, problem+json errors
-- Event append service (row lock + sequence + NOTIFY) and SSE streamer with catch-up
-- **Accept:** tests prove ordered persistence under concurrent appends, catch-up from `after_seq`, no duplicates after reconnect, NOTIFY only after commit.
+## M1 — Backend foundation ✅
+- ✅ `backend/` with uv, ruff, mypy `--strict`, pytest; `app/config.py`; Dockerfile (non-root)
+- ✅ `compose.yaml`: postgres (+ `agentp_test`), api; `.env.example` including `DOCKER_HOST`
+- ✅ Colima bind mounts, `:ro`, `host.docker.internal`, `--network none` verified — results in LOCAL_DEVELOPMENT.md
+- ✅ Alembic migration for all MVP tables; append-only trigger on `execution_events`; `alembic check` clean
+- ✅ `/healthz`, `/readyz` (DB + migration head), request IDs, structlog with redaction, problem+json errors
+- ✅ Event append (row lock + sequence + NOTIFY in-transaction), LISTEN broker, SSE with `Last-Event-ID` catch-up
+- ✅ Auth (argon2 admin token, signed session, synchronizer CSRF), tasks, runs, cancel, metrics, meta, idempotency
+- ✅ GitHub Actions CI: backend checks with Postgres service, frontend checks, image build
+- ✅ **Accepted:** 26 tests cover concurrent ordered appends, append-only, NOTIFY only after commit, live SSE delivery < 1.5 s, resume without duplicates, CSRF/Origin, idempotency, visibility.
+- Worker process deferred to M3 (it has nothing to execute before agents exist).
 
 ## M2 — Frontend shell 🔄
 
@@ -28,12 +31,13 @@ Done (built ahead of M1, against the API contract; shows honest offline/empty st
 - ✅ Event reducer shared by live view and replay, with unit tests (dedupe, retries, denied tools, unknown events)
 - ✅ `/dev/preview` with an **ILLUSTRATIVE** fixture, excluded from production builds
 
-Remaining:
-- Wire to the real API once M1 lands; sign-in UI; approval card; results page
+- ✅ Wired to the real API (verified against the containerized backend); operator sign-in control; "no provider configured" notice
+
+Remaining (lands with M3/M4 features):
+- Approval card; results page
 - Move ELK to its web-worker build to shrink the 1.6 MB workspace chunk
-- `frontend/` Vite + React + TS strict; Tailwind tokens; router; `vercel.json` rewrite; `.env.example`
-- App shell (sidebar, top bar), Dashboard and New Task wired to the real API; loading/empty/error states
-- **Accept:** `npm run build` produces static `dist/`; the dashboard shows the empty state with no runs and real values with runs.
+
+**Accept:** `npm run build` produces static `dist/` ✅; the dashboard shows the empty state with no runs ✅ and real values with runs (verified once M3 produces runs).
 
 ## M3 — Real agents ☐
 - `LLMProvider` + Gemini adapter (verify models and limits from official docs; record them in TECH_STACK)
