@@ -1,8 +1,10 @@
 """Command-line entry points: `agentp api`, `agentp hash-token`."""
 
 import argparse
+import asyncio
 import getpass
 import secrets
+import signal
 
 import uvicorn
 
@@ -15,6 +17,8 @@ def main() -> None:
     api.add_argument("--host", default="127.0.0.1")
     api.add_argument("--port", type=int, default=8000)
     api.add_argument("--reload", action="store_true")
+
+    sub.add_parser("worker", help="Run the orchestrator worker (claims and executes queued runs)")
 
     tok = sub.add_parser(
         "hash-token", help="Generate (or read) an admin token and print its ADMIN_TOKEN_HASH"
@@ -32,6 +36,8 @@ def main() -> None:
             proxy_headers=True,
             access_log=False,  # RequestContextMiddleware logs requests with correlation ids
         )
+    elif args.command == "worker":
+        asyncio.run(_run_worker())
     elif args.command == "hash-token":
         from app.security.auth import hash_token
 
@@ -40,3 +46,22 @@ def main() -> None:
             print(f"Admin token (keep it secret, use it to sign in): {token}")
         # Single quotes: argon2 hashes contain '$', which dotenv/shell would otherwise expand.
         print(f"ADMIN_TOKEN_HASH='{hash_token(token)}'")
+
+
+async def _run_worker() -> None:
+    from app.config import get_settings
+    from app.observability.logging import configure_logging
+    from app.orchestrator.worker import Worker, build_providers
+    from app.persistence.db import Database
+
+    settings = get_settings()
+    configure_logging(settings.log_level, json_logs=settings.env == "prod")
+    db = Database(settings)
+    worker = Worker(settings, db, build_providers(settings))
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, worker.stop)
+    try:
+        await worker.run_forever()
+    finally:
+        await db.dispose()

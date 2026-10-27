@@ -1,6 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, setCsrfToken } from './client'
-import type { CreateTaskRequest, Me, Meta, MetricsSummary, Page, RunDetail, RunListItem, Task } from './types'
+import type {
+  ArtifactMeta,
+  ArtifactOut,
+  CreateTaskRequest,
+  Me,
+  Meta,
+  MetricsSummary,
+  Page,
+  RunDetail,
+  RunListItem,
+  Task,
+} from './types'
 
 export const queryKeys = {
   me: ['me'] as const,
@@ -79,4 +90,33 @@ export function useCreateTaskAndRun() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['runs'] }),
   })
+}
+
+export const useArtifact = (id: string | null) =>
+  useQuery({
+    queryKey: ['artifact', id],
+    queryFn: ({ signal }) => api<ArtifactOut>(`/artifacts/${id}`, { signal }),
+    enabled: !!id,
+    staleTime: Infinity, // artifacts are immutable
+  })
+
+export const useRunArtifacts = (runId: string) =>
+  useQuery({
+    queryKey: ['run-artifacts', runId],
+    queryFn: ({ signal }) => api<ArtifactMeta[]>(`/runs/${runId}/artifacts`, { signal }),
+  })
+
+export function useApprovalDecision() {
+  return useMutation({
+    mutationFn: ({ id, decision, comment }: { id: string; decision: 'approve' | 'reject'; comment?: string }) =>
+      api(`/approvals/${id}/decision`, {
+        method: 'POST',
+        body: { decision, comment: comment || null },
+        idempotencyKey: crypto.randomUUID(),
+      }),
+  })
+}
+
+export function useCancelRun() {
+  return useMutation({ mutationFn: (runId: string) => api(`/runs/${runId}/cancel`, { method: 'POST' }) })
 }

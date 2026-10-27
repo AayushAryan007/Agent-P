@@ -19,3 +19,6 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+
+# Run workspaces (cloned/copied repositories, sandbox output)
+.workspaces/

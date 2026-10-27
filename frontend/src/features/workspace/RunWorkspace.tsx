@@ -6,6 +6,7 @@ import { isTerminal, type RunState } from '@/domain/runState'
 import { statusMeta, toneText } from '@/domain/status'
 import { durationBetween, formatDuration, formatTokens } from '@/lib/format'
 import { AgentGraph } from './AgentGraph'
+import { ApprovalCard } from './ApprovalCard'
 import { Inspector } from './Inspector'
 import { Timeline } from './Timeline'
 
@@ -31,6 +32,7 @@ export function RunWorkspace({
   toolbar,
   nowOverride,
   initialStepId = null,
+  readOnly = false,
 }: {
   title: string
   state: RunState
@@ -39,6 +41,8 @@ export function RunWorkspace({
   /** Replay supplies its own clock so timers reflect recorded time, not wall time. */
   nowOverride?: number
   initialStepId?: string | null
+  /** Replays and previews show the approval gate but never allow acting on it. */
+  readOnly?: boolean
 }) {
   const liveNow = useNow(!isTerminal(state.status) && nowOverride == null)
   const now = nowOverride ?? liveNow
@@ -140,8 +144,15 @@ export function RunWorkspace({
           </div>
         </div>
 
-        <aside className="min-h-0 border-l border-border bg-surface-1" aria-label="Inspector">
-          <Inspector state={state} stepId={stepId} toolId={toolId} onSelectTool={setToolId} now={now} />
+        <aside className="flex min-h-0 flex-col border-l border-border bg-surface-1" aria-label="Inspector">
+          {state.approval?.status === 'pending' && (
+            <div className="max-h-[60%] shrink-0 overflow-auto border-b border-border p-3">
+              <ApprovalCard approval={state.approval} readOnly={readOnly} />
+            </div>
+          )}
+          <div className="min-h-0 flex-1">
+            <Inspector state={state} stepId={stepId} toolId={toolId} onSelectTool={setToolId} now={now} />
+          </div>
         </aside>
       </div>
     </div>

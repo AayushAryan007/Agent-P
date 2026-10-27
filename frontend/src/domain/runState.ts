@@ -39,6 +39,15 @@ export interface ToolState {
   durationMs: number | null
 }
 
+export interface ApprovalState {
+  id: string
+  stepId: string | null
+  artifactId: string | null
+  summary: string | null
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled'
+  comment: string | null
+}
+
 export interface RunState {
   runId: string | null
   status: RunStatus
@@ -52,6 +61,8 @@ export interface RunState {
   stepOrder: string[]
   tools: Record<string, ToolState>
   pendingApprovalId: string | null
+  approval: ApprovalState | null
+  reportArtifactId: string | null
   totals: { inputTokens: number; outputTokens: number; llmCalls: number; toolCalls: number }
   events: ExecutionEvent[]
 }
@@ -69,6 +80,8 @@ export const initialRunState: RunState = {
   stepOrder: [],
   tools: {},
   pendingApprovalId: null,
+  approval: null,
+  reportArtifactId: null,
   totals: { inputTokens: 0, outputTokens: 0, llmCalls: 0, toolCalls: 0 },
   events: [],
 }
@@ -123,6 +136,8 @@ export function applyEvent(prev: RunState, event: ExecutionEvent): RunState {
     }
     case 'workflow.started':
       return { ...state, status: 'running', startedAt: at }
+    case 'workflow.resumed':
+      return { ...state, status: 'running' }
     case 'workflow.waiting_approval':
       return { ...state, status: 'waiting_approval', pendingApprovalId: str(p.approval_id) }
     case 'workflow.completed':
@@ -131,6 +146,7 @@ export function applyEvent(prev: RunState, event: ExecutionEvent): RunState {
         status: 'completed',
         finishedAt: at,
         verificationLabel: (str(p.verification_label) as VerificationLabel | null) ?? null,
+        reportArtifactId: str(p.report_artifact_id),
       }
     case 'workflow.failed':
       return { ...state, status: 'failed', finishedAt: at, statusReason: str(p.reason) }
@@ -144,10 +160,6 @@ export function applyEvent(prev: RunState, event: ExecutionEvent): RunState {
         startedAt: s.startedAt ?? at,
         lastError: null,
       }))
-    case 'step.status_changed': {
-      const to = str(p.to) as StepStatus | null
-      return to ? updateStep(state, event.step_id, () => ({ status: to })) : state
-    }
     case 'step.completed':
       return updateStep(state, event.step_id, () => ({
         status: 'completed',
@@ -229,9 +241,32 @@ export function applyEvent(prev: RunState, event: ExecutionEvent): RunState {
     }
 
     case 'approval.requested':
-      return updateStep(state, event.step_id, () => ({ status: 'waiting_approval' }))
-    case 'approval.resolved':
-      return { ...state, pendingApprovalId: null, status: state.status === 'waiting_approval' ? 'running' : state.status }
+      state = updateStep(state, event.step_id, () => ({ status: 'waiting_approval' }))
+      return {
+        ...state,
+        approval: {
+          id: str(p.approval_id) ?? '',
+          stepId: event.step_id,
+          artifactId: str(p.artifact_id),
+          summary: str(p.summary),
+          status: 'pending',
+          comment: null,
+        },
+      }
+    case 'approval.resolved': {
+      const decision = str(p.decision) === 'approved' ? 'approved' : 'rejected'
+      return {
+        ...state,
+        pendingApprovalId: null,
+        approval: state.approval ? { ...state.approval, status: decision, comment: str(p.comment) } : null,
+      }
+    }
+    case 'step.status_changed': {
+      const to = str(p.to) as StepStatus | null
+      return to
+        ? updateStep(state, event.step_id, (s) => ({ status: to, finishedAt: to === 'cancelled' ? at : s.finishedAt }))
+        : state
+    }
 
     default:
       return state

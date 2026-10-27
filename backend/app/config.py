@@ -1,10 +1,13 @@
 """Centralized configuration. Every setting comes from the environment (or backend/.env in dev)."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, PostgresDsn, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -52,6 +55,19 @@ class Settings(BaseSettings):
     max_max_llm_calls: int = 80
     max_max_total_tokens: int = 500_000
     max_max_tool_calls: int = 200
+
+    # Execution (worker + sandbox). Workspaces must live where the Docker engine can bind-mount them
+    # (under $HOME for Colima; a fixed host path in production).
+    workspace_root: Path = REPO_ROOT / ".workspaces"
+    bundled_repos_root: Path = REPO_ROOT / "demo-repos"
+    sandbox_image: str = "agentp-sandbox-python:0.1"
+    worker_max_runs: int = 1
+    worker_poll_s: float = 1.0
+    worker_lease_s: int = 60
+    step_concurrency: int = 2
+    approval_timeout_s: int = 2 * 3600
+    repo_max_mb: int = 50
+    repo_max_files: int = 5000
 
 
 @lru_cache

@@ -115,3 +115,19 @@ export interface Task extends CreateTaskRequest {
   id: string
   created_at: string
 }
+
+export interface ArtifactOut {
+  id: string
+  run_id: string
+  step_id: string | null
+  kind: 'patch' | 'test_report' | 'benchmark' | 'review' | 'report' | 'log'
+  name: string
+  content_type: string
+  size_bytes: number
+  sha256: string
+  created_at: string
+  text: string | null
+  data: Record<string, unknown> | null
+}
+
+export type ArtifactMeta = Omit<ArtifactOut, 'text' | 'data'>

@@ -23,6 +23,14 @@ export function describeEvent(e: ExecutionEvent, state: RunState): string {
       return `Workflow failed · ${s(p.reason)}`
     case 'workflow.cancelled':
       return 'Workflow cancelled'
+    case 'workflow.cancel_requested':
+      return `Cancellation requested by ${s(p.actor)}`
+    case 'workflow.resumed':
+      return `Workflow resumed after ${s(p.decision)} decision`
+    case 'step.status_changed':
+      return `${step} ${s(p.from)} → ${s(p.to)}${p.reason ? ` (${s(p.reason)})` : ''}`
+    case 'llm.call_failed':
+      return `${step} model call failed: ${s(p.message)}`
     case 'step.started':
       return `${step} started${typeof p.attempt === 'number' && p.attempt > 1 ? ` (attempt ${p.attempt})` : ''}`
     case 'step.completed':

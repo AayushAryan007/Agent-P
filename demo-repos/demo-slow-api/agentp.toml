@@ -1,0 +1,8 @@
+# How AGENT-P verifies this repository. Commands run inside the sandbox with no network.
+[verify]
+test_command = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "--junitxml=/out/junit.xml"]
+benchmark_command = ["python", "-m", "bench.bench"]
+# Paths restored from the original repository before verification, so a patch cannot "pass" by editing them.
+protected_paths = ["tests", "bench"]
+# Minimum relative p50 improvement for a performance fix to count as verified.
+min_improvement = 0.10

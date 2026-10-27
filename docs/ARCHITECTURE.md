@@ -117,8 +117,8 @@ sequenceDiagram
   participant S as sandbox
   D->>T: propose_patch(edits)
   T->>T: validate schema, paths inside repo, size limits
-  T->>S: dry-run apply on scratch copy (no network)
-  S-->>T: applies cleanly + diff
+  T->>T: apply edits as text in memory (no code runs)
+  T->>T: applies cleanly → unified diff
   T-->>O: patch artifact
   O->>O: step approve_patch -> waiting_approval, event approval.requested
   U->>O: POST /approvals/{id}/decision {approve}

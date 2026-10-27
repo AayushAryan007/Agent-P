@@ -4,7 +4,7 @@
 
 Give AGENT-P an engineering task against a Python repository — *"this endpoint is slow, find out why, fix it, and prove the fix works"* — and watch a coordinator and specialized agents plan, inspect code through permissioned tools, propose a patch, wait for your approval, and verify the result in an isolated sandbox. Every step is a persisted, ordered event, so the live graph, the replay, and the final report all tell the same, verifiable story.
 
-> Status: early development. Architecture, event log, API and UI shell are in place; agent execution is next. See the [roadmap](docs/IMPLEMENTATION_ROADMAP.md).
+> Status: MVP feature-complete locally — agents, tool gate, approval, sandboxed verification, live view, replay and report work end to end. Deployment is next. See the [roadmap](docs/IMPLEMENTATION_ROADMAP.md).
 
 ## Why
 

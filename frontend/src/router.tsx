@@ -11,6 +11,7 @@ const children: RouteObject[] = [
   { path: 'runs', element: <RunsPage /> },
   // The workspace pulls in React Flow + ELK (~1.5 MB), so it loads on demand.
   { path: 'runs/:runId', lazy: async () => ({ Component: (await import('@/features/runs/RunPage')).RunPage }) },
+  { path: 'runs/:runId/report', lazy: async () => ({ Component: (await import('@/features/runs/ReportPage')).ReportPage }) },
   { path: 'tasks/new', element: <NewTaskPage /> },
   { path: 'settings', element: <SettingsPage /> },
   { path: '*', element: <NotFound /> },

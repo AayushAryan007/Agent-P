@@ -35,6 +35,8 @@ jobs:
           version: "0.13.6"
           enable-cache: true
       - run: uv sync --frozen
+      - name: Build sandbox image (sandbox tests run real containers)
+        run: docker build -t agentp-sandbox-python:0.1 ../sandbox/python
       - run: uv run ruff format --check .
       - run: uv run ruff check .
       - run: uv run mypy

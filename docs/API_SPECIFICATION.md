@@ -76,7 +76,8 @@ Mutating requests also require an allowed `Origin` and an `X-CSRF-Token` header 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/approvals?status=pending` | op | Pending approvals |
-| POST | `/approvals/{approval_id}/decision` | op | `{"decision":"approve"|"reject","comment":"…"}` → `200`; `409` if already decided |
+| POST | `/approvals/{approval_id}/decision` | op | `{"decision":"approve"|"reject","comment":"…"}` + `Idempotency-Key` → `200`; `409` if already decided (conditional update) |
+| GET | `/runs/{run_id}/approvals` | – | Approvals of a run (visibility-checked) |
 
 ### Metrics and settings
 | Method | Path | Auth | Description |
@@ -134,6 +135,7 @@ Guarantees: every event is persisted before it is sent; ordered by `sequence_num
 | `workflow.completed` | `verification_label`, `report_artifact_id`, `totals` |
 | `workflow.failed` | `reason`, `message`, `totals` |
 | `workflow.cancel_requested` / `workflow.cancelled` | `actor` / `totals` |
+| `workflow.resumed` | `approval_id`, `decision` (after the approval gate) |
 | `step.started` | `attempt`, `input_summary` |
 | `step.status_changed` | `from`, `to`, `reason` |
 | `step.completed` | `output_summary`, `duration_ms` |
@@ -141,7 +143,7 @@ Guarantees: every event is persisted before it is sent; ordered by `sequence_num
 | `step.skipped` | `reason` |
 | `agent.message` | `kind` (`thought_summary`\|`narrative`), `text` — model-written narration, labeled as such in the UI |
 | `llm.call_started` / `llm.call_completed` | `llm_call_id`, `model`; `input_tokens`, `output_tokens`, `latency_ms`, `finish_reason` |
-| `llm.rate_limited` | `retry_after_ms` |
+| `llm.rate_limited` / `llm.call_failed` | `llm_call_id`, `model`, `message` |
 | `agent.output_invalid` | `validation_errors[]`, `attempt` |
 | `tool.started` | `tool_name`, `input` (sanitized) |
 | `tool.completed` | `output_summary`, `truncated`, `duration_ms` |

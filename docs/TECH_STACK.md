@@ -15,7 +15,7 @@ Status: Phase 2 baseline. Last updated: 2026-10-27. Versions are pinned in lockf
 | Live run state | Zustand store fed by a pure `reduceEvent` function | One reducer for live view and replay; easy to unit test |
 | 2D graph | React Flow (`@xyflow/react`) + ELK.js layered layout | Custom React nodes (status, timers), pan/zoom, keyboard selection; ELK handles DAG layout better than dagre for ports/edges |
 | 3D graph (M6) | React Three Fiber + drei | Fixed decision; lazy-loaded so it doesn't bloat the main bundle |
-| Diff view | `react-diff-view` + `diff` parsing | Proper file-by-file split/unified views |
+| Diff view | Small custom unified-diff renderer (`src/lib/diff.ts`) | Patches are already unified diffs; rendering them as text lines avoids a dependency and any HTML injection |
 | Code highlight | Shiki (lazy) | Accurate highlighting for tool outputs and diffs |
 | Timeline virtualization | TanStack Virtual | NFR-7: thousands of events |
 | Fonts | Inter (UI), JetBrains Mono (code/ids) | Clean, readable; matches references' style |

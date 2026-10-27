@@ -34,7 +34,7 @@ Untrusted data enters at: request bodies, repository contents, sandbox output, a
 Each `clone`, `install`, `test`, and `bench` step runs in a fresh container from `agentp-sandbox-python` with:
 - non-root UID 10001, `--cap-drop=ALL`, `--security-opt no-new-privileges`, default seccomp profile, `--read-only` root filesystem, `--tmpfs /tmp:size=256m,noexec`;
 - `--pids-limit 256`, `--memory 1g --memory-swap 1g`, `--cpus 1.0`, wall-clock timeout (clone 60 s, install 180 s, tests 300 s, bench 180 s), killed and removed on timeout;
-- **network:** `none` for test/bench; a dedicated egress-only bridge for clone/install (no access to the host or other containers; blocked from cloud metadata `169.254.169.254` via host firewall rules);
+- **network:** `none` for test/bench; clone/install currently use the engine's default bridge (outbound access, no secrets). A dedicated egress-only network with the cloud metadata address `169.254.169.254` blocked by host firewall rules is required before public GitHub runs are enabled on the production host;
 - mounts: the repository copy **read-only** for test/bench; a writable `out/` directory bound to that step only; dependencies installed into a per-run volume that is mounted read-only into the test step;
 - no environment variables except an explicit allowlist (`PYTHONDONTWRITEBYTECODE`, `PIP_NO_INPUT`, …); **no secrets, ever**;
 - the Docker socket is **never** mounted into any sandbox;

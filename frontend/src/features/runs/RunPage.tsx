@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { History } from 'lucide-react'
-import { useParams } from 'react-router'
-import { useRun } from '@/api/queries'
-import { ErrorState, Skeleton } from '@/components/ui'
-import { isTerminal } from '@/domain/runState'
+import { FileText, History, Square } from 'lucide-react'
+import { useMemo } from 'react'
+import { Link, useParams } from 'react-router'
+import { useCancelRun, useMe, useRun } from '@/api/queries'
+import { Button, ErrorState, Skeleton } from '@/components/ui'
+import { isTerminal, reduceEvents, type RunState } from '@/domain/runState'
 import { RunWorkspace } from '@/features/workspace/RunWorkspace'
 import { fetchAllEvents, useLiveRunEvents, type StreamStatus } from './useRunEvents'
 import { useReplay } from './useReplay'
@@ -27,6 +28,32 @@ export function RecordedBanner() {
   )
 }
 
+function RunActions({ runId, state }: { runId: string; state: RunState }) {
+  const me = useMe()
+  const cancel = useCancelRun()
+  const terminal = isTerminal(state.status)
+  return (
+    <>
+      {!terminal && me.data?.role === 'operator' && (
+        <Button
+          variant="danger"
+          icon={Square}
+          loading={cancel.isPending}
+          disabled={cancel.isSuccess}
+          onClick={() => cancel.mutate(runId)}
+        >
+          {cancel.isSuccess ? 'Cancelling…' : 'Cancel'}
+        </Button>
+      )}
+      {state.reportArtifactId && (
+        <Link to={`/runs/${runId}/report`} className="inline-flex h-8 items-center gap-1.5 rounded-control bg-blue px-3 text-[13px] font-medium text-white hover:bg-blue/90">
+          <FileText className="size-4" aria-hidden /> Report
+        </Link>
+      )}
+    </>
+  )
+}
+
 function LiveRun({ runId, title }: { runId: string; title: string }) {
   const { state, stream } = useLiveRunEvents(runId, true)
   const [label, dot] = STREAM_LABEL[stream]
@@ -35,18 +62,36 @@ function LiveRun({ runId, title }: { runId: string; title: string }) {
       title={title}
       state={state}
       toolbar={
-        <span className="flex items-center gap-1.5">
-          <span className={`size-2 rounded-full ${dot}`} aria-hidden />
-          {label}
-        </span>
+        <>
+          <span className="flex items-center gap-1.5">
+            <span className={`size-2 rounded-full ${dot}`} aria-hidden />
+            {label}
+          </span>
+          <RunActions runId={runId} state={state} />
+        </>
       }
     />
   )
 }
 
-function RecordedRun({ title, events }: { title: string; events: ExecutionEvent[] }) {
+function RecordedRun({ runId, title, events }: { runId: string; title: string; events: ExecutionEvent[] }) {
   const replay = useReplay(events)
-  return <RunWorkspace title={title} state={replay.state} banner={<RecordedBanner />} toolbar={replay.bar} nowOverride={replay.clock} />
+  const final = useMemo(() => reduceEvents(events), [events])
+  return (
+    <RunWorkspace
+      title={title}
+      state={replay.state}
+      banner={<RecordedBanner />}
+      toolbar={
+        <>
+          {replay.bar}
+          <RunActions runId={runId} state={final} />
+        </>
+      }
+      nowOverride={replay.clock}
+      readOnly
+    />
+  )
 }
 
 function RecordedRunLoader({ runId, title }: { runId: string; title: string }) {
@@ -57,7 +102,7 @@ function RecordedRunLoader({ runId, title }: { runId: string; title: string }) {
   })
   if (events.isPending) return <Skeleton className="m-6 h-[600px]" />
   if (events.isError) return <ErrorState error={events.error} onRetry={() => events.refetch()} />
-  return <RecordedRun title={title} events={events.data} />
+  return <RecordedRun runId={runId} title={title} events={events.data} />
 }
 
 export function RunPage() {

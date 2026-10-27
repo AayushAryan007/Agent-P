@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.deps import AppServices
 from app.api.errors import install_error_handlers
-from app.api.routes import auth, health, meta, metrics, runs, tasks
+from app.api.routes import approvals, artifacts, auth, health, meta, metrics, runs, tasks
 from app.config import Settings, get_settings
 from app.events.broker import EventBroker
 from app.observability.logging import RequestContextMiddleware, configure_logging
@@ -63,6 +63,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(RequestContextMiddleware)
 
     app.include_router(health.router)
-    for module in (auth, meta, tasks, runs, metrics):
+    for module in (auth, meta, tasks, runs, approvals, artifacts, metrics):
         app.include_router(module.router, prefix=API_PREFIX)
     return app

@@ -39,20 +39,22 @@ Remaining (lands with M3/M4 features):
 
 **Accept:** `npm run build` produces static `dist/` ✅; the dashboard shows the empty state with no runs ✅ and real values with runs (verified once M3 produces runs).
 
-## M3 — Real agents ☐
-- `LLMProvider` + Gemini adapter (verify models and limits from official docs; record them in TECH_STACK)
-- Tool registry and gate; `list_tree`, `read_file`, `search_code`
-- State machine transitions + scheduler + worker claim loop + budgets + cancellation
-- Coordinator, Repository Analysis, Debugging agents with structured outputs
-- `demo-repos/demo-slow-api` (FastAPI + SQLite N+1 bug, pytest suite, benchmark script)
-- Live workspace: 2D graph (React Flow), inspector, timeline, tool detail
-- **Accept:** a real run against the demo repo shows each step and tool call live; an injected invalid output shows a retry.
+## M3 — Real agents ✅ (pending one live Gemini run)
+- ✅ `LLMProvider` protocol, Gemini adapter (`generate_content`, forced function calling, thought signatures preserved), scripted provider for tests
+- ✅ Tool gate (allowlist → schema → budget → timeout → redaction → record) with `list_tree`, `read_file`, `search_code`, `propose_patch`; path policy blocks traversal, absolute paths, `.git`, escaping symlinks
+- ✅ Transition tables, DAG scheduler (baseline runs in parallel with planning/analysis), worker with SKIP LOCKED claim, DB-clock leases, cancellation, stale-run recovery, budgets
+- ✅ Coordinator (plan + report), Repository Analysis, Debugging, Review agents; outputs via validated `submit_result`; invalid output → `agent.output_invalid` + retry
+- ✅ `demo-repos/demo-slow-api`: N+1 in `list_orders()`; reference fix measured 273 ms → 8.5 ms p50 on the host
+- ✅ Live workspace wired to SSE; approval card; cancel; report link
+- ⏳ **Accept:** run once with a real `GEMINI_API_KEY` and record the outcome here (automated tests use the scripted provider).
 
-## M4 — Safe verification ☐
-- Sandbox image and runner; clone/install/test/bench steps with the hardening flags
-- `propose_patch` with dry-run apply; approval gate API + UI
-- Verification label rules, review agent, final report
-- **Accept:** approve → `verified` on the demo repo; reject → `not_verified (rejected)`; a patch editing tests is capped at `partially_verified`; sandbox network is proven off by a test.
+## M4 — Safe verification ✅
+- ✅ Sandbox image `agentp-sandbox-python:0.1` (non-root, git, pytest/fastapi/httpx preinstalled) and runner (cap-drop ALL, no-new-privileges, read-only rootfs, tmpfs, pids/mem/cpu limits, timeout kill, labels + orphan cleanup)
+- ✅ Clone (GitHub) and dependency install with network; tests/bench with `--network none`; original tests and benchmark restored before verification
+- ✅ `propose_patch` validates by applying edits as text in memory (no code execution); patch applied only after approval
+- ✅ Deterministic verification label rules; review agent; report artifact (narrative tagged model-written, results tagged recorded); results page
+- ✅ **Accepted:** real-sandbox test run on the demo repo ends `verified` (394.8 → 9.1 ms p50 in a 1-CPU sandbox); rejection → `not_verified` with verify/review skipped; tests prove UID 10001, network blocked, read-only mounts, host secrets absent, timeout kill; protected-path rule covered by unit tests.
+- Follow-ups: egress-restricted network for clone/install (see SECURITY_MODEL residual risks); gVisor on the production host.
 
 ## M5 — Replay, CI, deploy ☐
 - Replay player (speeds, scrubbing) over the shared reducer; "Recorded" labeling

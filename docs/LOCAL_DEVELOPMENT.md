@@ -36,11 +36,24 @@ npm run dev                       # http://localhost:5173
 
 Alternatively, run the API in a container too: `docker compose up -d --build` (it applies migrations on start).
 
+### Running agents (worker + sandbox)
+
+```bash
+docker build -t agentp-sandbox-python:0.1 sandbox/python    # once (and after changing sandbox/python)
+cd backend
+export DOCKER_HOST=unix://$HOME/.colima/default/docker.sock
+uv run agentp worker                                        # claims queued runs and executes them
+```
+
+The worker runs on the host (not in Compose) during development: sandbox bind mounts use host paths under
+`.workspaces/`, which Colima shares into its VM. Sign in on the frontend with your admin token, create a task on
+the bundled `demo-slow-api` repo, and approve the patch when the run asks for it.
+
 ## Checks
 
 | | Command |
 |---|---|
-| Backend tests (needs `docker compose up -d postgres`) | `cd backend && uv run pytest` |
+| Backend tests (needs `docker compose up -d postgres`) | `cd backend && DOCKER_HOST=unix://$HOME/.colima/default/docker.sock uv run pytest` (sandbox tests skip if the image is missing; `-m 'not sandbox'` to skip them explicitly) |
 | Backend lint / format / types | `uv run ruff check . && uv run ruff format --check . && uv run mypy` |
 | Frontend | `cd frontend && npm run lint && npm run typecheck && npm test && npm run build` |
 | Migration drift | `cd backend && uv run alembic check` |
