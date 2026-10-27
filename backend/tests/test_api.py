@@ -117,7 +117,7 @@ async def test_run_snapshot_events_and_cancel(operator: httpx.AsyncClient, anon:
 
 async def test_metrics_are_derived_from_runs(operator: httpx.AsyncClient) -> None:
     empty = (await operator.get("/api/v1/metrics/summary")).json()
-    assert empty["runs_total"] == 0 and empty["success_rate"] is None
+    assert empty["runs_total"] == 0 and empty["success_rate"] is None and empty["verified_runs"] == 0
 
     task_id = (await operator.post("/api/v1/tasks", json=task_body())).json()["id"]
     for _ in range(2):

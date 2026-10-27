@@ -82,7 +82,7 @@ Mutating requests also require an allowed `Origin` and an `X-CSRF-Token` header 
 ### Metrics and settings
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/metrics/summary?window=7d` | – | Derived: run counts by status, success rate, avg/p95 duration, tokens, recent failures |
+| GET | `/metrics/summary?window=7d` | – | Derived: run counts by status, success rate, avg/p95 duration, tokens, pending approvals, verified runs, recent failures |
 | GET | `/settings` | op | Non-secret settings + provider status (`configured: bool`) |
 | PATCH | `/settings` | op | Default model/limits (validated against maximums) |
 

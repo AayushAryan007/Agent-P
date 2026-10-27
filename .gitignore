@@ -22,3 +22,6 @@ dist/
 
 # Run workspaces (cloned/copied repositories, sandbox output)
 .workspaces/
+
+# Source video kept locally; the site serves the smaller bg1-540.mp4
+frontend/public/bg1.mp4

@@ -2,12 +2,13 @@ import { createBrowserRouter, type RouteObject } from 'react-router'
 import { AppShell } from '@/components/AppShell'
 import { NotFound } from '@/components/NotFound'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
+import { LandingPage } from '@/features/landing/LandingPage'
 import { RunsPage } from '@/features/runs/RunsPage'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { NewTaskPage } from '@/features/tasks/NewTaskPage'
 
 const children: RouteObject[] = [
-  { index: true, element: <DashboardPage /> },
+  { path: 'dashboard', element: <DashboardPage /> },
   { path: 'runs', element: <RunsPage /> },
   // The workspace pulls in React Flow + ELK (~1.5 MB), so it loads on demand.
   { path: 'runs/:runId', lazy: async () => ({ Component: (await import('@/features/runs/RunPage')).RunPage }) },
@@ -25,4 +26,7 @@ if (import.meta.env.DEV) {
   })
 }
 
-export const router = createBrowserRouter([{ path: '/', element: <AppShell />, children }])
+export const router = createBrowserRouter([
+  { path: '/', element: <LandingPage /> },
+  { element: <AppShell />, children },
+])

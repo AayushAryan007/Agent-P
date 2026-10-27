@@ -38,6 +38,13 @@ async def summary(
         ).all()
     )
     completed = by_status.get("completed", 0)
+    verified = (
+        await session.scalar(
+            select(func.count())
+            .select_from(WorkflowRun)
+            .where(in_window, WorkflowRun.verification_label == "verified")
+        )
+    ) or 0
     terminal = completed + by_status.get("failed", 0) + by_status.get("cancelled", 0)
 
     duration_ms = func.extract("epoch", WorkflowRun.finished_at - WorkflowRun.started_at) * 1000
@@ -90,5 +97,6 @@ async def summary(
         p95_duration_ms=float(p95_ms) if p95_ms is not None else None,
         total_tokens=int(tokens),
         pending_approvals=int(pending),
+        verified_runs=int(verified),
         recent_failures=[to_list_item(r, t) for r, t in failures],
     )

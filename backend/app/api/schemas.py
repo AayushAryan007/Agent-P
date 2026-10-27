@@ -121,6 +121,7 @@ class MetricsSummary(BaseModel):
     p95_duration_ms: float | None
     total_tokens: int
     pending_approvals: int
+    verified_runs: int
     recent_failures: list[RunListItem]
 
 

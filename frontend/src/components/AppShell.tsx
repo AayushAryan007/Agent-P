@@ -5,26 +5,15 @@ import { NavLink, Outlet, useNavigate } from 'react-router'
 import { API_URL } from '@/api/client'
 import { useMe } from '@/api/queries'
 import { AuthControl } from './AuthControl'
+import { BrandLogo } from './BrandLogo'
 import { Button } from './ui'
 
 const NAV: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/runs', label: 'Runs', icon: ListTree },
   { to: '/tasks/new', label: 'New task', icon: Plus },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
-
-function Logo() {
-  return (
-    <svg viewBox="0 0 32 32" className="size-8" aria-hidden>
-      <rect width="32" height="32" rx="8" fill="var(--color-surface-2)" stroke="var(--color-border-strong)" />
-      <circle cx="9" cy="16" r="3.2" fill="var(--color-blue)" />
-      <circle cx="23" cy="9.5" r="3.2" fill="var(--color-violet)" />
-      <circle cx="23" cy="22.5" r="3.2" fill="var(--color-green)" />
-      <path d="M12 15l8-4.5M12 17l8 4.5" stroke="var(--color-cyan)" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 function ConnectionChip() {
   const me = useMe()
@@ -49,7 +38,7 @@ export function AppShell() {
       <div className="flex h-full">
         <nav aria-label="Primary" className="flex w-16 shrink-0 flex-col items-center gap-1 border-r border-border bg-surface-1 py-3">
           <NavLink to="/" aria-label="AGENT-P home" className="mb-4">
-            <Logo />
+            <BrandLogo className="size-9 rounded-lg ring-1 ring-border-strong" />
           </NavLink>
           {NAV.map(({ to, label, icon: Icon, end }) => (
             <Tooltip.Root key={to}>

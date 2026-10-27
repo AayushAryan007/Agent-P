@@ -65,6 +65,7 @@ export interface MetricsSummary {
   p95_duration_ms: number | null
   total_tokens: number
   pending_approvals: number
+  verified_runs: number
   recent_failures: RunListItem[]
 }
 
